@@ -2,12 +2,15 @@
 #include "display.h"
 #include "web_server.h" 
 
-float dataBuffer[BUFFER_SIZE];
-unsigned long timebase = 1000;
-unsigned long ultimoCampionamento = 0;
+// --- IL DOPPIO BUFFER ---
+float bufferAcquisizione[BUFFER_SIZE]; // Usato dal Core 1 (Lettura)
+float bufferDisplay[BUFFER_SIZE];      // Usato dal Core 0 (Schermo/Web)
 
-// --- VARIABILI PULSANTE CORRETTE ---
-bool holdAttivo = false;
+// Variabili condivise tra i due Core (devono essere "volatile" per sicurezza)
+volatile int timebaseCondiviso = 1000;
+volatile bool holdAttivo = false;
+volatile bool nuovoFramePronto = false; 
+
 unsigned long ultimoTempoPressione = 0;
 
 float getVoltage() {
@@ -21,82 +24,135 @@ int getPotValue() {
   return analogRead(PIN_POTENZIOMETRO);
 }
 
+// =========================================================
+// 📺 TASK CORE 0: Gestione Schermo e Wi-Fi
+// =========================================================
+void TaskCore0_SchermoWeb(void * pvParameters) {
+  for(;;) { // Ciclo infinito del Task
+    gestisciWeb(); // Mantiene vivo il Wi-Fi
+
+    // Se il Core 1 ci dice che c'è una nuova "fotografia" pronta...
+    if (nuovoFramePronto) {
+      // Disegniamo l'onda usando il buffer copiato
+      disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo);
+      inviaDatiWeb(bufferDisplay, timebaseCondiviso);
+      
+      nuovoFramePronto = false; // Abbassiamo la bandierina in attesa del prossimo
+    }
+    
+    // FONDAMENTALE: Facciamo riposare il Core 0 per 10 millisecondi.
+    // Se non lo facciamo, il cane da guardia (Watchdog) riavvia l'ESP32!
+    vTaskDelay(10 / portTICK_PERIOD_MS); 
+  }
+}
+
+// =========================================================
+// ⚡ TASK CORE 1: Acquisizione Dati Pura (Massima Velocità)
+// =========================================================
+void TaskCore1_Acquisizione(void * pvParameters) {
+  unsigned long ultimoCampionamento = 0;
+
+  for(;;) {
+    // 1. Lettura Pulsante HOLD
+    if (digitalRead(PIN_PULSANTE) == LOW) {
+      if (millis() - ultimoTempoPressione > 250) { 
+        holdAttivo = !holdAttivo;           
+        ultimoTempoPressione = millis();    
+      }
+    }
+
+    // Se siamo in Pausa, riposiamo per 50ms e saltiamo tutto il resto
+    if (holdAttivo) {
+      vTaskDelay(50 / portTICK_PERIOD_MS);
+      continue; 
+    }
+
+    // 2. Lettura Timebase
+    int tb = map(getPotValue(), 0, 4095, MIN_TIMEBASE, MAX_TIMEBASE);
+    timebaseCondiviso = tb;
+
+    // 3. Campionamento
+    if (tb > 5000) {
+      // 🐢 ROLL MODE
+      unsigned long tempoAttuale = micros();
+      if (tempoAttuale - ultimoCampionamento >= tb) {
+        ultimoCampionamento = tempoAttuale;
+        
+        for(int i = 0; i < BUFFER_SIZE - 1; i++) {
+          bufferAcquisizione[i] = bufferAcquisizione[i+1];
+        }
+        bufferAcquisizione[BUFFER_SIZE - 1] = getVoltage();
+        
+        // Copia veloce nel buffer del display e alza la bandierina!
+        memcpy(bufferDisplay, bufferAcquisizione, sizeof(bufferAcquisizione));
+        nuovoFramePronto = true;
+      } else {
+        // Mentre aspetta il segnale lento, fa respirare il processore (1ms)
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+      }
+      
+    } else {
+      // 🐇 SMART TRIGGER MODE 
+      unsigned long timeoutTrigger = millis();
+      while(getVoltage() > 2.5 && (millis() - timeoutTrigger < 20)) { }
+      while(getVoltage() < 2.5 && (millis() - timeoutTrigger < 20)) { }
+
+      for(int i = 0; i < BUFFER_SIZE; i++) {
+        unsigned long startTime = micros();
+        bufferAcquisizione[i] = getVoltage();
+        unsigned long tempoTrascorso = micros() - startTime;
+        if (tb > tempoTrascorso) {
+          delayMicroseconds(tb - tempoTrascorso);
+        }
+      }
+      
+      // Copia veloce nel buffer del display e alza la bandierina!
+      memcpy(bufferDisplay, bufferAcquisizione, sizeof(bufferAcquisizione));
+      nuovoFramePronto = true;
+      
+      // Riposo minimo tra un'acquisizione fulminea e l'altra
+      vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+  }
+}
+
+// =========================================================
+// 🚀 SETUP: Inizializzazione e Lancio dei Task
+// =========================================================
 void setup() {
   Serial.begin(115200);
   analogReadResolution(12);
-  
   pinMode(PIN_PULSANTE, INPUT_PULLUP);
   
   inizializzaDisplay(); 
-  
-  // 🚀 OVERCLOCK I2C: Quadruplica gli FPS dello schermo OLED!
-  Wire.setClock(400000); 
-  
+  Wire.setClock(400000); // Overclock OLED a 400kHz
   inizializzaWiFi(); 
+
+  // Creazione del Task per il Wi-Fi e Display sul CORE 0
+  xTaskCreatePinnedToCore(
+    TaskCore0_SchermoWeb,   // La funzione da eseguire
+    "TaskSchermo",          // Nome di debug
+    10000,                  // Dimensione della memoria (Stack)
+    NULL,                   // Parametri
+    1,                      // Priorità (1 = Normale)
+    NULL,                   // Gestore (Handle)
+    0                       // ESEGUITO SUL CORE 0
+  );
+
+  // Creazione del Task per l'Acquisizione veloce sul CORE 1
+  xTaskCreatePinnedToCore(
+    TaskCore1_Acquisizione, 
+    "TaskAcquisizione",     
+    10000,                  
+    NULL,                   
+    2,                      // Priorità (2 = Più alta del display!)
+    NULL,                   
+    1                       // ESEGUITO SUL CORE 1
+  );
 }
 
 void loop() {
-  gestisciWeb(); 
-
-  // ==========================================
-  // 🔘 LETTURA PULSANTE (Antirimbalzo Infallibile)
-  // ==========================================
-  if (digitalRead(PIN_PULSANTE) == LOW) {
-    if (millis() - ultimoTempoPressione > 250) { 
-      holdAttivo = !holdAttivo;           
-      ultimoTempoPressione = millis();    
-    }
-  }
-
-  // ==========================================
-  // 📊 ACQUISIZIONE DATI (Solo se NON in Hold)
-  // ==========================================
-  if (!holdAttivo) {
-    timebase = map(getPotValue(), 0, 4095, MIN_TIMEBASE, MAX_TIMEBASE);
-
-    if (timebase > 5000) {
-      // 🐢 ROLL MODE (Per segnali lenti)
-      unsigned long tempoAttuale = micros();
-      if (tempoAttuale - ultimoCampionamento >= timebase) {
-        ultimoCampionamento = tempoAttuale;
-        for(int i = 0; i < BUFFER_SIZE - 1; i++) {
-          dataBuffer[i] = dataBuffer[i+1];
-        }
-        dataBuffer[BUFFER_SIZE - 1] = getVoltage();
-        
-        disegnaOnda(dataBuffer, timebase, holdAttivo);
-        inviaDatiWeb(dataBuffer, timebase); 
-      }
-    } else {
-      // 🐇 SMART TRIGGER MODE (Per segnali veloci, fluido e sincronizzato)
-      unsigned long timeoutTrigger = millis();
-      
-      // Cerca il segnale scendere sotto i 2.5V (Timeout max 20ms)
-      while(getVoltage() > 2.5 && (millis() - timeoutTrigger < 20)) { }
-      
-      // Cerca il segnale salire sopra i 2.5V (Timeout max 20ms)
-      while(getVoltage() < 2.5 && (millis() - timeoutTrigger < 20)) { }
-
-      // Acquisizione veloce dei dati
-      for(int i = 0; i < BUFFER_SIZE; i++) {
-        unsigned long startTime = micros();
-        dataBuffer[i] = getVoltage();
-        unsigned long tempoTrascorso = micros() - startTime;
-        if (timebase > tempoTrascorso) {
-          delayMicroseconds(timebase - tempoTrascorso);
-        }
-      }
-      
-      disegnaOnda(dataBuffer, timebase, holdAttivo);
-      inviaDatiWeb(dataBuffer, timebase); 
-    }
-  } else {
-    // ⏸️ HOLD MODE: Mantiene vivo l'aggiornamento per chi si connette dal Web
-    static unsigned long ultimoInvioHold = 0;
-    if (millis() - ultimoInvioHold > 500) { 
-      ultimoInvioHold = millis();
-      disegnaOnda(dataBuffer, timebase, holdAttivo);
-      inviaDatiWeb(dataBuffer, timebase);
-    }
-  }
+  // Il classico "loop" di Arduino qui non serve più a niente!
+  // Lo uccidiamo per liberare memoria e lasciare spazio ai nostri Task.
+  vTaskDelete(NULL);
 }
