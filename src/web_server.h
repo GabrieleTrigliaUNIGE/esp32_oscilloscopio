@@ -5,6 +5,8 @@
 
 void inizializzaWiFi();
 void gestisciWeb();
-void inviaDatiWeb(float* buffer, int timebase);
+
+// Aggiunti i parametri vMax e freq qui!
+void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq);
 
 #endif

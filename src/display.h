@@ -3,8 +3,8 @@
 
 #include "config.h"
 
-// Dichiariamo le funzioni che useremo nel main
 void inizializzaDisplay();
-void disegnaOnda(float* buffer, int timebase, bool inHold);
+// Aggiunti i parametri vMax e freq
+void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float freq); 
 
 #endif

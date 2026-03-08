@@ -2,11 +2,9 @@
 #include "display.h"
 #include "web_server.h" 
 
-// --- IL DOPPIO BUFFER ---
-float bufferAcquisizione[BUFFER_SIZE]; // Usato dal Core 1 (Lettura)
-float bufferDisplay[BUFFER_SIZE];      // Usato dal Core 0 (Schermo/Web)
+float bufferAcquisizione[BUFFER_SIZE]; 
+float bufferDisplay[BUFFER_SIZE];      
 
-// Variabili condivise tra i due Core (devono essere "volatile" per sicurezza)
 volatile int timebaseCondiviso = 1000;
 volatile bool holdAttivo = false;
 volatile bool nuovoFramePronto = false; 
@@ -25,32 +23,88 @@ int getPotValue() {
 }
 
 // =========================================================
+// 🧮 MOTORE MATEMATICO (VMax e Frequenza)
+// =========================================================
+void calcolaStatistiche(float* buffer, int timebase, float &vMax, float &freq) {
+  vMax = 0.0;
+  float somma = 0.0;
+
+  // Trova il Picco Massimo e la Media del segnale
+  for(int i = 0; i < BUFFER_SIZE; i++) {
+    if(buffer[i] > vMax) vMax = buffer[i];
+    somma += buffer[i];
+  }
+  float media = somma / BUFFER_SIZE;
+
+  // Calcolo della Frequenza contando i punti di incrocio sulla media
+  int incrociSalita = 0;
+  int primoIncrocio = -1;
+  int ultimoIncrocio = -1;
+
+  for(int i = 1; i < BUFFER_SIZE; i++) {
+    // Se il punto precedente era sotto la media e l'attuale è sopra, è una salita!
+    if(buffer[i-1] < media && buffer[i] >= media) {
+      incrociSalita++;
+      if(primoIncrocio == -1) primoIncrocio = i;
+      ultimoIncrocio = i;
+    }
+  }
+
+  // Se abbiamo trovato almeno un'onda completa (2 incroci in salita)
+  if(incrociSalita >= 2) {
+    float tempoTotaleUs = (ultimoIncrocio - primoIncrocio) * timebase;
+    float periodoUs = tempoTotaleUs / (incrociSalita - 1);
+    freq = 1000000.0 / periodoUs; // Converte Periodo in Frequenza (Hz)
+  } else {
+    freq = 0.0; // Segnale piatto o non si ripete abbastanza
+  }
+}
+
+// =========================================================
 // 📺 TASK CORE 0: Gestione Schermo e Wi-Fi
 // =========================================================
 void TaskCore0_SchermoWeb(void * pvParameters) {
-  for(;;) { // Ciclo infinito del Task
-    gestisciWeb(); // Mantiene vivo il Wi-Fi
+  for(;;) { 
+    gestisciWeb(); 
 
-    // Se il Core 1 ci dice che c'è una nuova "fotografia" pronta...
     if (nuovoFramePronto) {
-      // Disegniamo l'onda usando il buffer copiato
-      disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo);
-      inviaDatiWeb(bufferDisplay, timebaseCondiviso);
+      float vMaxCorrente = 0.0;
+      float freqCorrente = 0.0;
+      calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+
+      disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente);
       
-      nuovoFramePronto = false; // Abbassiamo la bandierina in attesa del prossimo
+      // ECCO LA MODIFICA 1: Aggiungiamo le variabili qui!
+      inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente); 
+      
+      nuovoFramePronto = false; 
+    } 
+    else if (holdAttivo) {
+      static unsigned long ultimoInvioHold = 0;
+      if (millis() - ultimoInvioHold > 500) {
+        ultimoInvioHold = millis();
+        
+        float vMaxCorrente = 0.0;
+        float freqCorrente = 0.0;
+        calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+        
+        disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente); 
+        
+        // ECCO LA MODIFICA 2: Aggiungiamo le variabili anche qui!
+        inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+      }
     }
     
-    // FONDAMENTALE: Facciamo riposare il Core 0 per 10 millisecondi.
-    // Se non lo facciamo, il cane da guardia (Watchdog) riavvia l'ESP32!
     vTaskDelay(10 / portTICK_PERIOD_MS); 
   }
 }
 
 // =========================================================
-// ⚡ TASK CORE 1: Acquisizione Dati Pura (Massima Velocità)
+// ⚡ TASK CORE 1: Acquisizione Dati Pura
 // =========================================================
 void TaskCore1_Acquisizione(void * pvParameters) {
   unsigned long ultimoCampionamento = 0;
+  int ultimoPotRaw = 0; // Memoria per il filtro del potenziometro
 
   for(;;) {
     // 1. Lettura Pulsante HOLD
@@ -58,17 +112,24 @@ void TaskCore1_Acquisizione(void * pvParameters) {
       if (millis() - ultimoTempoPressione > 250) { 
         holdAttivo = !holdAttivo;           
         ultimoTempoPressione = millis();    
+        
+        // FORZA L'AGGIORNAMENTO! Fa comparire o sparire la scritta HOLD
+        nuovoFramePronto = true; 
       }
     }
 
-    // Se siamo in Pausa, riposiamo per 50ms e saltiamo tutto il resto
     if (holdAttivo) {
       vTaskDelay(50 / portTICK_PERIOD_MS);
       continue; 
     }
 
-    // 2. Lettura Timebase
-    int tb = map(getPotValue(), 0, 4095, MIN_TIMEBASE, MAX_TIMEBASE);
+    // 2. Lettura Timebase con FILTRO ANTI-RUMORE (Deadband)
+    int potAttuale = getPotValue();
+    // Aggiorniamo il valore SOLO se hai girato davvero la manopola (ignoriamo il tremolio)
+    if (abs(potAttuale - ultimoPotRaw) > 20) {
+      ultimoPotRaw = potAttuale;
+    }
+    int tb = map(ultimoPotRaw, 0, 4095, MIN_TIMEBASE, MAX_TIMEBASE);
     timebaseCondiviso = tb;
 
     // 3. Campionamento
@@ -83,11 +144,9 @@ void TaskCore1_Acquisizione(void * pvParameters) {
         }
         bufferAcquisizione[BUFFER_SIZE - 1] = getVoltage();
         
-        // Copia veloce nel buffer del display e alza la bandierina!
         memcpy(bufferDisplay, bufferAcquisizione, sizeof(bufferAcquisizione));
         nuovoFramePronto = true;
       } else {
-        // Mentre aspetta il segnale lento, fa respirare il processore (1ms)
         vTaskDelay(1 / portTICK_PERIOD_MS);
       }
       
@@ -106,18 +165,16 @@ void TaskCore1_Acquisizione(void * pvParameters) {
         }
       }
       
-      // Copia veloce nel buffer del display e alza la bandierina!
       memcpy(bufferDisplay, bufferAcquisizione, sizeof(bufferAcquisizione));
       nuovoFramePronto = true;
       
-      // Riposo minimo tra un'acquisizione fulminea e l'altra
       vTaskDelay(1 / portTICK_PERIOD_MS);
     }
   }
 }
 
 // =========================================================
-// 🚀 SETUP: Inizializzazione e Lancio dei Task
+// 🚀 SETUP
 // =========================================================
 void setup() {
   Serial.begin(115200);
@@ -125,34 +182,13 @@ void setup() {
   pinMode(PIN_PULSANTE, INPUT_PULLUP);
   
   inizializzaDisplay(); 
-  Wire.setClock(400000); // Overclock OLED a 400kHz
+  Wire.setClock(400000); 
   inizializzaWiFi(); 
 
-  // Creazione del Task per il Wi-Fi e Display sul CORE 0
-  xTaskCreatePinnedToCore(
-    TaskCore0_SchermoWeb,   // La funzione da eseguire
-    "TaskSchermo",          // Nome di debug
-    10000,                  // Dimensione della memoria (Stack)
-    NULL,                   // Parametri
-    1,                      // Priorità (1 = Normale)
-    NULL,                   // Gestore (Handle)
-    0                       // ESEGUITO SUL CORE 0
-  );
-
-  // Creazione del Task per l'Acquisizione veloce sul CORE 1
-  xTaskCreatePinnedToCore(
-    TaskCore1_Acquisizione, 
-    "TaskAcquisizione",     
-    10000,                  
-    NULL,                   
-    2,                      // Priorità (2 = Più alta del display!)
-    NULL,                   
-    1                       // ESEGUITO SUL CORE 1
-  );
+  xTaskCreatePinnedToCore(TaskCore0_SchermoWeb, "TaskSchermo", 10000, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(TaskCore1_Acquisizione, "TaskAcquisizione", 10000, NULL, 2, NULL, 1);
 }
 
 void loop() {
-  // Il classico "loop" di Arduino qui non serve più a niente!
-  // Lo uccidiamo per liberare memoria e lasciare spazio ai nostri Task.
   vTaskDelete(NULL);
 }
