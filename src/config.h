@@ -29,7 +29,7 @@
 
 // --- IMPOSTAZIONI WI-FI ---
 // Inserisci qui il nome e la password del tuo modem di casa!
-#define WIFI_SSID "Titanic"
+#define WIFI_SSID "iPhone di Gabri"
 #define WIFI_PASSWORD "Giugno1220"
 
 #endif
