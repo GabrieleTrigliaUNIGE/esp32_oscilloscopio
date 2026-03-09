@@ -61,6 +61,8 @@
   #ifdef USE_WEB_SERVER
     #include <WebServer.h>
     #include <WebSocketsServer.h>
+    #include <LittleFS.h>
+
   void inizializzaWebServer();
   void gestisciWeb();
   void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold);

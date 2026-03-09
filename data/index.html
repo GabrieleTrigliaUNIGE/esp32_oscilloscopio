@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ESP32 Oscilloscopio</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h2>Oscilloscopio Wi-Fi</h2>
+  
+  <div class="dashboard">
+    <div>Timebase: <span id="tb" class="val">1000</span> &micro;s</div>
+    <div>VMax: <span id="vmax" class="val">0.0</span> V</div>
+    <div>Freq: <span id="freq" class="val">0</span> Hz</div>
+  </div>
+
+  <canvas id="oscope" width="800" height="400"></canvas>
+  
+  <script src="script.js"></script>
+</body>
+</html>
