@@ -40,7 +40,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     }
 
     function onMessage(event) {
-      // Formato dati: "timebase;vMax;freq;val1,val2..."
+      // NUOVO FORMATO: timebase;vMax;freq;inHold;val1,val2...
       var data = event.data.split(';');
       
       document.getElementById('tb').innerHTML = data[0];
@@ -49,32 +49,68 @@ const char index_html[] PROGMEM = R"rawliteral(
       var freqValue = parseInt(data[2]);
       document.getElementById('freq').innerHTML = (freqValue > 0) ? freqValue : "--";
 
-      var points = data[3].split(',');
+      var inHold = (data[3] === "1"); // Leggiamo se è in pausa
+      var points = data[4].split(',');
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Griglia
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 1;
+      var leftMargin = 40;
+      var graphWidth = canvas.width - leftMargin;
+
+      // ==========================================
+      // ASSE Y E TESTI
+      // ==========================================
+      ctx.fillStyle = '#ccc';
+      ctx.font = '16px Segoe UI';
+      ctx.fillText('5V', 10, 20);
+      ctx.fillText('0V', 10, canvas.height - 10);
+
+      // Linea asse Y verticale
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(0, canvas.height / 2);
-      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.moveTo(leftMargin, 0);
+      ctx.lineTo(leftMargin, canvas.height);
       ctx.stroke();
 
-      // Onda
+      // Linea tratteggiata centrale (2.5V)
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([10, 10]); // Tratteggio
+      ctx.beginPath();
+      ctx.moveTo(leftMargin, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset tratteggio
+
+      // ==========================================
+      // DISEGNO ONDA
+      // ==========================================
       ctx.beginPath();
       ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 3;
-      var xStep = canvas.width / (points.length - 1);
+      var xStep = graphWidth / (points.length - 1);
       
       for(var i = 0; i < points.length; i++) {
         var v = parseFloat(points[i]);
         var y = canvas.height - (v / 5.0 * canvas.height); 
-        var x = i * xStep;
+        var x = leftMargin + (i * xStep);
         if(i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+
+      // ==========================================
+      // OVERLAY PAUSA MINIMALISTA
+      // ==========================================
+      if (inHold) {
+        var px = leftMargin + (graphWidth / 2) - 10;
+        var py = (canvas.height / 2) - 20;
+        ctx.fillStyle = '#fff';
+        // Disegna due barrette centrali trasparenti (senza sfondo)
+        ctx.fillRect(px, py, 6, 40);
+        ctx.fillRect(px + 14, py, 6, 40);
+      }
     }
     window.addEventListener('load', initWebSocket);
   </script>
@@ -86,10 +122,8 @@ void inizializzaWebServer() {
   server.on("/", HTTP_GET, []() {
     server.send_P(200, "text/html", index_html);
   });
-  
   server.begin();
   webSocket.begin();
-  Serial.println("Web Server e WebSockets avviati.");
 }
 
 void gestisciWeb() {
@@ -97,13 +131,14 @@ void gestisciWeb() {
   webSocket.loop();
 }
 
-void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq) {
+// Aggiunto "bool inHold" alla funzione
+void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold) {
   static unsigned long ultimoInvio = 0;
   if (millis() - ultimoInvio > 50) { 
     ultimoInvio = millis();
     
-    // Assembliamo la stringa con tutti i dati
-    String payload = String(timebase) + ";" + String(vMax, 2) + ";" + String(freq, 0) + ";";
+    // Assembliamo la stringa inserendo anche lo stato della pausa (1 o 0)
+    String payload = String(timebase) + ";" + String(vMax, 2) + ";" + String(freq, 0) + ";" + String(inHold ? "1" : "0") + ";";
     
     for (int i = 0; i < BUFFER_SIZE; i++) {
       payload += String(buffer[i], 2); 
@@ -113,4 +148,4 @@ void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq) {
   }
 }
 
-#endif
+#endif // USE_WEB_SERVER

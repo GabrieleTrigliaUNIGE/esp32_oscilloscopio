@@ -35,9 +35,9 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
       disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente);
       #endif
 
-      #ifdef USE_WIFI
+      #if defined(USE_WIFI) && defined(USE_WEB_SERVER)
       if (isWiFiConnesso()) {
-        inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente); 
+        inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente, holdAttivo); 
       }
       #endif
       
@@ -59,9 +59,9 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
         disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente); 
         #endif
 
-        #ifdef USE_WIFI
+        #if defined(USE_WIFI) && defined(USE_WEB_SERVER)
         if (isWiFiConnesso()) {
-          inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+          inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente, holdAttivo);
         }
         #endif
       }

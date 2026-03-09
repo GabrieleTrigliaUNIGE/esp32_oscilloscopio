@@ -63,7 +63,7 @@
     #include <WebSocketsServer.h>
   void inizializzaWebServer();
   void gestisciWeb();
-  void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq);
+  void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold);
   #endif
 #endif
 
