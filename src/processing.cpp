@@ -22,8 +22,8 @@ void calcolaStatistiche(float* buffer, int timebase, float &vMax, float &freq) {
     return; 
   }
 
-  // 2. ISTERESI (Filtro Anti-Rumore): Fascia morta del 15%
-  float fasciaMorta = ampiezza * 0.15; 
+  // 2. ISTERESI (Filtro Anti-Rumore): Fascia morta del 10%
+  float fasciaMorta = ampiezza * 0.10; 
   float sogliaAlta = media + fasciaMorta;
   float sogliaBassa = media - fasciaMorta;
 

@@ -6,10 +6,21 @@ Un oscilloscopio digitale fai-da-te ad alte prestazioni basato su ESP32. Sfrutta
 
 * **Architettura Multi-Core (FreeRTOS):** Acquisizione del segnale sul Core 1 (nessun lag) e gestione interfaccia/Wi-Fi sul Core 0.
 * **Interfaccia Web in Tempo Reale:** Visualizza l'onda direttamente sul browser del tuo smartphone o PC a frequenze di aggiornamento elevate tramite protocollo WebSocket.
-* **Display OLED Locale:** Supporto integrato per display I2C da 1.3" (Chip SH1106) con I2C overcloccato a 400kHz per la massima fluidità.
+* **Display OLED Locale:** Supporto integrato per display I2C da 1.3" (Chip SH110X) con I2C overcloccato a 400kHz per la massima fluidità.
+* **Digital Signal Processing (DSP):** Motore matematico avanzato con **Schmitt Trigger software** e isteresi (10%) per un calcolo solido della frequenza e della VMax, immune al rumore di fondo.
 * **Controllo Hardware del Timebase:** Regola lo zoom temporale (da 20 µs a 100.000 µs) in tempo reale ruotando un potenziometro fisico.
 * **Smart Trigger & Roll Mode:** Transizione automatica tra un'onda "congelata" (per segnali veloci) e uno scorrimento continuo stile elettrocardiogramma (per segnali lenti).
-* **Funzione HOLD Hardware:** Pulsante fisico con antirimbalzo software per bloccare la lettura e analizzare il segnale con calma.
+* **Funzione HOLD Sincronizzata:** Pulsante fisico con antirimbalzo software per bloccare la lettura. Genera un overlay minimalista (`||`) visibile simultaneamente sia sull'OLED che sul Web.
+
+---
+
+## 🧱 Architettura Modulare (Il file `config.h`)
+
+Il firmware è altamente personalizzabile. Puoi accendere o spegnere interi blocchi del sistema utilizzando le direttive del preprocessore, risparmiando memoria Flash e RAM:
+* `USE_DISPLAY`: Disattivalo per trasformare l'ESP32 in un data-logger "cieco".
+* `USE_WIFI`: Disattivalo per usare lo strumento offline a batteria.
+* `USE_CONTROLS`: Abilita/disabilita la lettura dei pin fisici.
+* `USE_SIMULATOR`: Sgancia l'hardware e genera un'onda matematica interna per testare la UI senza bisogno di segnali o cavi fisici!
 
 ---
 
@@ -43,6 +54,6 @@ Un oscilloscopio digitale fai-da-te ad alte prestazioni basato su ESP32. Sfrutta
 
 Questo progetto è stato sviluppato utilizzando **PlatformIO**. 
 
-1. Clona questa repository:
+1. **Clona questa repository:**
    ```bash
    git clone [https://github.com/TUO_NOME_UTENTE/NOME_REPO.git](https://github.com/TUO_NOME_UTENTE/NOME_REPO.git)
