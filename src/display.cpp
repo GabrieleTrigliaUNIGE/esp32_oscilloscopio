@@ -1,4 +1,6 @@
-#include "display.h"
+#include "config.h"
+
+#ifdef USE_DISPLAY
 
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -65,3 +67,5 @@ void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float fre
 
   display.display(); 
 }
+
+#endif

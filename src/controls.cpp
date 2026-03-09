@@ -1,4 +1,6 @@
-#include "controls.h"
+#include "config.h"
+
+#ifdef USE_CONTROLS
 
 void inizializzaControlli() {
   pinMode(PIN_PULSANTE, INPUT_PULLUP);
@@ -25,3 +27,5 @@ bool gestisciPulsanteHold(bool statoAttuale, unsigned long &ultimoTempoPressione
   }
   return statoAttuale;
 }
+
+#endif

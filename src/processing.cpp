@@ -1,4 +1,6 @@
-#include "processing.h"
+#include "config.h"
+
+#ifdef USE_PROCESSING
 
 void calcolaStatistiche(float* buffer, int timebase, float &vMax, float &freq) {
   vMax = 0.0;
@@ -30,3 +32,5 @@ void calcolaStatistiche(float* buffer, int timebase, float &vMax, float &freq) {
     freq = 0.0; 
   }
 }
+
+#endif

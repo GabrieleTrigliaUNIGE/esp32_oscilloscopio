@@ -1,4 +1,7 @@
-#include "wifi_manager.h"
+#include "config.h"
+
+#ifdef USE_WIFI
+
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include "arduino_secrets.h"
@@ -43,3 +46,5 @@ bool inizializzaWiFi() {
 bool isWiFiConnesso() {
   return wifiConnesso;
 }
+
+#endif

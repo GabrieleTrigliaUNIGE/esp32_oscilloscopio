@@ -1,6 +1,6 @@
-#include "web_server.h"
-#include <WebServer.h>
-#include <WebSocketsServer.h>
+#include "config.h"
+
+#ifdef USE_WEB_SERVER
 
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -112,3 +112,5 @@ void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq) {
     webSocket.broadcastTXT(payload); 
   }
 }
+
+#endif
