@@ -1,5 +1,4 @@
 #include "web_server.h"
-#include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
 
@@ -41,10 +40,9 @@ const char index_html[] PROGMEM = R"rawliteral(
     }
 
     function onMessage(event) {
-      // Il nuovo formato è: "timebase;vMax;freq;val1,val2..."
+      // Formato dati: "timebase;vMax;freq;val1,val2..."
       var data = event.data.split(';');
       
-      // Aggiorna i testi HTML
       document.getElementById('tb').innerHTML = data[0];
       document.getElementById('vmax').innerHTML = parseFloat(data[1]).toFixed(1);
       
@@ -55,7 +53,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Griglia centrale
+      // Griglia
       ctx.strokeStyle = '#333';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -63,7 +61,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       ctx.lineTo(canvas.width, canvas.height / 2);
       ctx.stroke();
 
-      // Disegna l'onda
+      // Onda
       ctx.beginPath();
       ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 3;
@@ -84,23 +82,14 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-void inizializzaWiFi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connessione al Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\n--- CONNESSO! ---");
-  Serial.print("Indirizzo IP Web: ");
-  Serial.println(WiFi.localIP());
-
+void inizializzaWebServer() {
   server.on("/", HTTP_GET, []() {
     server.send_P(200, "text/html", index_html);
   });
   
   server.begin();
   webSocket.begin();
+  Serial.println("Web Server e WebSockets avviati.");
 }
 
 void gestisciWeb() {
@@ -113,7 +102,7 @@ void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq) {
   if (millis() - ultimoInvio > 50) { 
     ultimoInvio = millis();
     
-    // Assembliamo la nuova mega-stringa con tutti i dati!
+    // Assembliamo la stringa con tutti i dati
     String payload = String(timebase) + ";" + String(vMax, 2) + ";" + String(freq, 0) + ";";
     
     for (int i = 0; i < BUFFER_SIZE; i++) {

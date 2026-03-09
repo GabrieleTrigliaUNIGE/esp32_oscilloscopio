@@ -27,9 +27,4 @@
 #define MIN_TIMEBASE 20
 #define MAX_TIMEBASE 100000
 
-// --- IMPOSTAZIONI WI-FI ---
-// Inserisci qui il nome e la password del tuo modem di casa!
-#define WIFI_SSID "iPhone di Gabri"
-#define WIFI_PASSWORD "Giugno1220"
-
 #endif

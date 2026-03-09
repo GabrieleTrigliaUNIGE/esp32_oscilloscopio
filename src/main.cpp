@@ -4,8 +4,9 @@
 #include "processing.h"
 #include "controls.h"
 #include "acquisition.h"
+#include "wifi_manager.h"
 
-// --- IL DOPPIO BUFFER ---
+// --- DOPPIO BUFFER ---
 float bufferAcquisizione[BUFFER_SIZE]; 
 float bufferDisplay[BUFFER_SIZE];      
 
@@ -19,7 +20,9 @@ volatile bool nuovoFramePronto = false;
 // =========================================================
 void TaskCore0_SchermoWeb(void * pvParameters) {
   for(;;) { 
-    gestisciWeb(); 
+    if (isWiFiConnesso()) {
+      gestisciWeb(); // Ascolta i client solo se c'è connessione
+    }
 
     if (nuovoFramePronto) {
       float vMaxCorrente = 0.0;
@@ -27,7 +30,11 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
       calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
 
       disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente);
-      inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente); 
+      
+      // Invia al web solo se siamo online!
+      if (isWiFiConnesso()) {
+        inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente); 
+      }
       
       nuovoFramePronto = false; 
     } 
@@ -41,7 +48,10 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
         calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
         
         disegnaOnda(bufferDisplay, timebaseCondiviso, holdAttivo, vMaxCorrente, freqCorrente); 
-        inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+        
+        if (isWiFiConnesso()) {
+          inviaDatiWeb(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+        }
       }
     }
     vTaskDelay(10 / portTICK_PERIOD_MS); 
@@ -86,7 +96,11 @@ void setup() {
   inizializzaControlli();
   inizializzaDisplay(); 
   Wire.setClock(400000); 
-  inizializzaWiFi(); 
+  
+  // LA NUOVA LOGICA DI AVVIO
+  if (inizializzaWiFi()) {
+    inizializzaWebServer(); // Si avvia solo se connesso
+  }
 
   xTaskCreatePinnedToCore(TaskCore0_SchermoWeb, "TaskSchermo", 10000, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(TaskCore1_Acquisizione, "TaskAcquisizione", 10000, NULL, 2, NULL, 1);

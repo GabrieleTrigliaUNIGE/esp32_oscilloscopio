@@ -3,10 +3,8 @@
 
 #include "config.h"
 
-void inizializzaWiFi();
+void inizializzaWebServer();
 void gestisciWeb();
-
-// Aggiunti i parametri vMax e freq qui!
 void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq);
 
 #endif
