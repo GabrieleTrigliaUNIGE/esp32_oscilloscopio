@@ -5,7 +5,7 @@ var ctx = canvas.getContext('2d');
 var gateway = `ws://${window.location.hostname}:81/`;
 
 // Usa questa riga per lo sviluppo locale (inserisci il TUO ip!):
-// var gateway = `ws://192.168.1.50:81/`;
+// var gateway = `ws://192.168.1.254:81/`;
 
 var websocket;
 

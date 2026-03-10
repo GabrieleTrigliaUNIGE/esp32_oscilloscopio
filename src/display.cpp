@@ -4,6 +4,32 @@
 
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+void mostraInfoBoot(String versione, String rete, String ip) {
+  display.clearDisplay();
+  
+  // Titolo e riga di separazione
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(8, 5);
+  display.print("ESP32 OSCILLOSCOPE");
+  display.drawLine(0, 16, 127, 16, SH110X_WHITE);
+
+  // Informazioni di sistema
+  display.setCursor(0, 25);
+  display.print("Ver:  "); 
+  display.print(versione);
+
+  display.setCursor(0, 40);
+  display.print("Rete: "); 
+  display.print(rete);
+
+  display.setCursor(0, 55);
+  display.print("IP:   "); 
+  display.print(ip);
+
+  display.display();
+}
+
 void inizializzaDisplay() {
   if(!display.begin(0x3C, true)) { 
     Serial.println(F("OLED non trovato!"));

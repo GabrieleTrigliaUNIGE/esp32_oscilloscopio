@@ -128,6 +128,18 @@ void setup() {
   #ifdef USE_WIFI
   if (inizializzaWiFi()) {
     inizializzaWebServer(); 
+
+    #ifdef USE_DISPLAY
+      // Wi-Fi connesso! Mostriamo la schermata di riepilogo
+      String ssidAttuale = WiFi.SSID();
+      String ipAttuale = WiFi.localIP().toString();
+      
+      mostraInfoBoot("1.0.0", ssidAttuale, ipAttuale);
+      
+      // Congeliamo l'ESP32 per 4 secondi per farti leggere l'IP!
+      delay(4000); 
+    #endif
+
   }
   #endif
 

@@ -47,6 +47,7 @@
   
   void inizializzaDisplay();
   void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float freq); 
+  void mostraInfoBoot(String versione, String rete, String ip);
 #endif
 
 // ==========================================
