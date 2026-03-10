@@ -33,6 +33,12 @@ Il firmware è altamente personalizzabile. Puoi accendere o spegnere interi bloc
 * 2x Resistenze dello stesso valore (es. 10kΩ) per il partitore di tensione
 * Breadboard e cavi jumper
 
+### 📐 Schema Elettrico
+
+Ecco lo schema dei collegamenti da realizzare. Per maggiori dettagli, puoi scaricare il [progetto KiCad e il PDF ufficiale nella cartella hardware/](hardware/).
+
+![Schema Elettrico dell'Oscilloscopio ESP32](schematic.png)
+
 ---
 
 ## 🔌 Schema dei Collegamenti
