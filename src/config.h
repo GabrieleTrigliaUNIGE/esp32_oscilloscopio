@@ -8,9 +8,14 @@
 // ==========================================
 #define USE_DISPLAY      // Attiva/Disattiva lo schermo OLED
 #define USE_WIFI         // Attiva/Disattiva Wi-Fi e Web Server
-#define USE_CONTROLS     // Attiva/Disattiva Pulsanti e Potenziometro
 #define USE_PROCESSING   // Attiva/Disattiva i calcoli matematici (VMax, Freq)
 #define USE_WEB_SERVER   // Attiva/Disattiva il Web Server (richiede USE_WIFI)
+
+#define USE_CONTROLS     // Attiva/Disattiva in blocco i controlli fisici
+#ifdef USE_CONTROLS
+  #define USE_ENCODER    // Attiva la logica dell'Encoder Rotativo KY-040
+  #define USE_BUTTON     // Attiva la logica del Pulsante fisico
+#endif
 
 // ==========================================
 // 🧲 MOTORE DI ACQUISIZIONE (Scegline UNO SOLO)
@@ -25,12 +30,51 @@
 #define V_REF 3.3
 #define PARTITORE_MOLTIPLICATORE 2.0 
 #define BUFFER_SIZE 128
+
+// Limiti e default della scala dei tempi
 #define MIN_TIMEBASE 20
 #define MAX_TIMEBASE 100000
 #define DEFAULT_TIMEBASE 9000
 
 #ifdef USE_CONTROLS
-  #define PIN_PULSANTE 32
+  #ifdef USE_ENCODER
+    #define ENCODER_PIN_CLK 25
+    #define ENCODER_PIN_DT  26
+    #define ENCODER_STEP    50  // Quanto varia il timebase a ogni scatto
+  #endif
+
+  #ifdef USE_BUTTON
+    #define PIN_PULSANTE 32     // Pin del pulsante fisico per la pausa
+  #endif
+#endif
+
+// ==========================================
+// 🧩 CLASSI DEI DISPOSITIVI (HARDWARE ABSTRACTION)
+// ==========================================
+#ifdef USE_ENCODER
+class SmartEncoder {
+  private:
+    static volatile int value;
+    static volatile uint8_t statoPrecedente;
+    static volatile int contatoreInterno;
+    static int step, minVal, maxVal, pinCLK, pinDT;
+    static void IRAM_ATTR isr();
+  public:
+    static void begin(int clk, int dt, int startValue, int stepVal, int minimum, int maximum);
+    static int getValue();
+};
+#endif
+
+#ifdef USE_BUTTON
+class SmartButton {
+  private:
+    int pin;
+    unsigned long ultimoTempoPressione;
+  public:
+    SmartButton();
+    void begin(int pinButton);
+    bool hasBeenClicked(); 
+};
 #endif
 
 // ==========================================
@@ -54,7 +98,7 @@
 // 🌐 MODULO WI-FI E WEB
 // ==========================================
 #ifdef USE_WIFI
-  #include "arduino_secrets.h" // Le tue password sicure
+  #include "arduino_secrets.h" 
   
   bool inizializzaWiFi();
   bool isWiFiConnesso();
@@ -64,26 +108,20 @@
     #include <WebSocketsServer.h>
     #include <LittleFS.h>
 
-  void inizializzaWebServer();
-  void gestisciWeb();
-  void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold);
+    void inizializzaWebServer();
+    void gestisciWeb();
+    void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold);
   #endif
 #endif
 
 // ==========================================
-// 🎛️ MODULO CONTROLLI
+// 🎛️ MODULO CONTROLLI GLOBALI
 // ==========================================
 #ifdef USE_CONTROLS
-
-  // Pin esclusivi per l'Encoder Rotativo KY-040
-  #define ENCODER_PIN_CLK 25
-  #define ENCODER_PIN_DT  26
-  #define ENCODER_PIN_SW  27  // Pulsante integrato (funzione Hold)
-  #define ENCODER_STEP    50  // Quanto varia il timebase a ogni scatto
-
   void inizializzaControlli();
   int leggiTimebase();
-  bool gestisciPulsanteHold(bool statoAttuale, unsigned long &ultimoTempoPressione, volatile bool &nuovoFramePronto);
+  // Nuova firma pulita!
+  bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto);
 #endif
 
 // ==========================================

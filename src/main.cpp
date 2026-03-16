@@ -76,24 +76,24 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
 void TaskCore1_Acquisizione(void * pvParameters) {
   unsigned long ultimoCampionamento = 0;
   
-  #ifdef USE_CONTROLS
-  // RIMOSSO: int ultimoPotRaw = 0; <-- Cancellala!
-  unsigned long ultimoTempoPressione = 0;
-  #endif
+  // Addio vecchie variabili "ultimoTempoPressione" e "ultimoPotRaw"! 
+  // Ora la memoria è gestita dai nostri oggetti Smart.
 
   for(;;) {
     
     #ifdef USE_CONTROLS
-    holdAttivo = gestisciPulsanteHold(holdAttivo, ultimoTempoPressione, nuovoFramePronto);
+    // Chiamata super pulita: passiamo solo lo stato attuale e il flag del display
+    holdAttivo = gestisciPulsanteHold(holdAttivo, nuovoFramePronto);
     #endif
 
+    // La logica di pausa
     if (holdAttivo) {
       vTaskDelay(50 / portTICK_PERIOD_MS);
       continue; 
     }
 
     #ifdef USE_CONTROLS
-    // MODIFICATO: Niente più parametri da passare
+    // Lettura istantanea dall'oggetto Encoder
     timebaseCondiviso = leggiTimebase(); 
     #endif
 
@@ -103,7 +103,6 @@ void TaskCore1_Acquisizione(void * pvParameters) {
     } else {
       eseguiSmartTrigger(bufferAcquisizione, bufferDisplay, timebaseCondiviso, nuovoFramePronto);
     }
-
   }
 }
 

@@ -2,66 +2,39 @@
 
 #ifdef USE_CONTROLS
 
-volatile int timebaseAttuale = DEFAULT_TIMEBASE;
-volatile uint8_t statoPrecedente = 0;
-volatile int contatoreInterno = 0; // Il nostro "divisore" segreto!
-
-// La nostra Macchina a Stati iper-reattiva
-void IRAM_ATTR encoderISR() {
-  uint8_t CLK_stato = digitalRead(ENCODER_PIN_CLK);
-  uint8_t DT_stato = digitalRead(ENCODER_PIN_DT);
-  
-  uint8_t statoCorrente = (CLK_stato << 1) | DT_stato;
-  uint8_t movimento = (statoPrecedente << 2) | statoCorrente;
-  statoPrecedente = statoCorrente;
-
-  // 1. Validiamo la direzione e aggiorniamo il contatore fantasma
-  if(movimento == 0b1101 || movimento == 0b0100 || movimento == 0b0010 || movimento == 0b1011) {
-    contatoreInterno++; 
-  } 
-  else if(movimento == 0b1110 || movimento == 0b0111 || movimento == 0b0001 || movimento == 0b1000) {
-    contatoreInterno--; 
-  }
-  
-  // 2. La Magia: convertiamo gli impulsi elettrici in scatti fisici
-  // Visto che il tuo encoder fa 2 impulsi per click, scattiamo solo a +2 o -2
-  if (contatoreInterno >= 2) {
-    timebaseAttuale += ENCODER_STEP;
-    contatoreInterno = 0; // Resettiamo per il prossimo click
-  } 
-  else if (contatoreInterno <= -2) {
-    timebaseAttuale -= ENCODER_STEP;
-    contatoreInterno = 0; // Resettiamo per il prossimo click
-  }
-  
-  // Manteniamo i valori dentro i limiti imposti dal config.h
-  if (timebaseAttuale < MIN_TIMEBASE) timebaseAttuale = MIN_TIMEBASE;
-  if (timebaseAttuale > MAX_TIMEBASE) timebaseAttuale = MAX_TIMEBASE;
-}
+// Creiamo un'istanza del nostro pulsante intelligente
+#ifdef USE_BUTTON
+  SmartButton btnHold;
+#endif
 
 void inizializzaControlli() {
-  pinMode(ENCODER_PIN_CLK, INPUT_PULLUP);
-  pinMode(ENCODER_PIN_DT, INPUT_PULLUP);
-  pinMode(PIN_PULSANTE, INPUT_PULLUP); 
+  #ifdef USE_ENCODER
+    SmartEncoder::begin(ENCODER_PIN_CLK, ENCODER_PIN_DT, DEFAULT_TIMEBASE, ENCODER_STEP, MIN_TIMEBASE, MAX_TIMEBASE);
+  #endif
   
-  // Agganciamo la nostra letale Macchina a Stati
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_CLK), encoderISR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_DT),  encoderISR, CHANGE);
+  #ifdef USE_BUTTON
+    btnHold.begin(PIN_PULSANTE);
+  #endif
 }
 
 int leggiTimebase() {
-  return timebaseAttuale; 
+  #ifdef USE_ENCODER
+    return SmartEncoder::getValue(); 
+  #else
+    return DEFAULT_TIMEBASE; // Valore di fallback se l'encoder è disattivato
+  #endif
 }
 
-bool gestisciPulsanteHold(bool statoAttuale, unsigned long &ultimoTempoPressione, volatile bool &nuovoFramePronto) {
-  if (digitalRead(PIN_PULSANTE) == LOW) {
-    if (millis() - ultimoTempoPressione > 250) { 
-      statoAttuale = !statoAttuale;           
-      ultimoTempoPressione = millis();    
-      nuovoFramePronto = true; 
+bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto) {
+  #ifdef USE_BUTTON
+    // L'oggetto update ora ci dice solo se è stato PREMUTO (true) o no (false)
+    if (btnHold.update(nuovoFramePronto)) {
+      statoAttuale = !statoAttuale; // Invertiamo lo stato globale
     }
-  }
-  return statoAttuale;
+    return statoAttuale;
+  #else
+    return statoAttuale; // Se il bottone è disabilitato, lo stato non cambia
+  #endif
 }
 
-#endif
+#endif // USE_CONTROLS
