@@ -64,3 +64,25 @@ h2 {
 .btn:active {
   transform: scale(0.95);
 }
+
+/* Stile per la casella di testo del Timebase */
+.input-tb {
+  width: 90px;
+  background-color: #222;
+  color: #00ff00;
+  border: 1px solid #555;
+  text-align: center;
+  font-family: inherit;
+  border-radius: 4px;
+}
+.input-tb:focus {
+  outline: none;
+  border-color: #00ff00;
+  background-color: #111;
+}
+
+/* Evita che il telefono scorra la pagina mentre tieni premuto il dito sui bottoni */
+.tb-btn {
+  touch-action: none; 
+  user-select: none;
+}

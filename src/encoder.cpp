@@ -56,4 +56,11 @@ void SmartEncoder::addValue(int delta) {
   if (value > maxVal) value = maxVal;
 }
 
+void SmartEncoder::setValue(int val) {
+  value = val;
+  
+  if (value < minVal) value = minVal;
+  if (value > maxVal) value = maxVal;
+}
+
 #endif // USE_ENCODER

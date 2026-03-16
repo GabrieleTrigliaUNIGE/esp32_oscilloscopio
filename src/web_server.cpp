@@ -17,18 +17,27 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     if (msg == "CMD:TB_UP") {
       #ifdef USE_ENCODER
       SmartEncoder::addValue(ENCODER_STEP);
-      nuovoFramePronto = true; // Forza un aggiornamento immediato
+      nuovoFramePronto = true; 
       #endif
     } 
     else if (msg == "CMD:TB_DOWN") {
       #ifdef USE_ENCODER
       SmartEncoder::addValue(-ENCODER_STEP);
-      nuovoFramePronto = true; // Forza un aggiornamento immediato
+      nuovoFramePronto = true; 
       #endif
     }
     else if (msg == "CMD:HOLD") {
       holdAttivo = !holdAttivo;
-      nuovoFramePronto = true; // Forza il disegno del simbolo di pausa
+      nuovoFramePronto = true; 
+    }
+    
+    else if (msg.startsWith("CMD:TB_SET:")) {
+      #ifdef USE_ENCODER
+      // Estraiamo il numero tagliando i primi 11 caratteri ("CMD:TB_SET:")
+      int newTb = msg.substring(11).toInt(); 
+      SmartEncoder::setValue(newTb);
+      nuovoFramePronto = true;
+      #endif
     }
   }
 }
@@ -54,7 +63,7 @@ void inizializzaWebServer() {
   server.begin();
   webSocket.begin();
   
-  // Agganciamo la funzione di ascolto al WebSocket!
+  // Agganciamo la funzione di ascolto al WebSocket
   webSocket.onEvent(webSocketEvent); 
   
   Serial.println("Web Server avviato. Modalità Ibrida attiva.");
