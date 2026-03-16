@@ -20,8 +20,8 @@
 // ==========================================
 // 🧲 MOTORE DI ACQUISIZIONE (Scegline UNO SOLO)
 // ==========================================
-//#define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
-#define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
+#define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
+// #define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
 
 // ==========================================
 // 📌 PIN E IMPOSTAZIONI GLOBALI
@@ -122,7 +122,6 @@ class SmartButton {
 #ifdef USE_CONTROLS
   void inizializzaControlli();
   int leggiTimebase();
-  // Nuova firma pulita!
   bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto);
 #endif
 

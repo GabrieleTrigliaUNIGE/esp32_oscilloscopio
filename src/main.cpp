@@ -131,7 +131,7 @@ void setup() {
       String ssidAttuale = WiFi.SSID();
       String ipAttuale = WiFi.localIP().toString();
       
-      mostraInfoBoot("1.0.0", ssidAttuale, ipAttuale);
+      mostraInfoBoot("1.1.0", ssidAttuale, ipAttuale);
       
       // Congeliamo l'ESP32 per 4 secondi per farti leggere l'IP!
       delay(4000); 
