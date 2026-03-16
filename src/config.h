@@ -27,9 +27,9 @@
 #define BUFFER_SIZE 128
 #define MIN_TIMEBASE 20
 #define MAX_TIMEBASE 100000
+#define DEFAULT_TIMEBASE 9000
 
 #ifdef USE_CONTROLS
-  #define PIN_POTENZIOMETRO 35
   #define PIN_PULSANTE 32
 #endif
 
@@ -74,8 +74,15 @@
 // 🎛️ MODULO CONTROLLI
 // ==========================================
 #ifdef USE_CONTROLS
+
+  // Pin esclusivi per l'Encoder Rotativo KY-040
+  #define ENCODER_PIN_CLK 25
+  #define ENCODER_PIN_DT  26
+  #define ENCODER_PIN_SW  27  // Pulsante integrato (funzione Hold)
+  #define ENCODER_STEP    50  // Quanto varia il timebase a ogni scatto
+
   void inizializzaControlli();
-  int leggiTimebase(int &ultimoPotRaw);
+  int leggiTimebase();
   bool gestisciPulsanteHold(bool statoAttuale, unsigned long &ultimoTempoPressione, volatile bool &nuovoFramePronto);
 #endif
 

@@ -6,7 +6,7 @@ float bufferDisplay[BUFFER_SIZE];
 
 // --- VARIABILI CONDIVISE ---
 // Valori di default sicuri nel caso in cui i controlli fisici vengano disattivati
-volatile int timebaseCondiviso = 1000;
+volatile int timebaseCondiviso = DEFAULT_TIMEBASE;
 volatile bool holdAttivo = false;
 volatile bool nuovoFramePronto = false;
 
@@ -77,29 +77,27 @@ void TaskCore1_Acquisizione(void * pvParameters) {
   unsigned long ultimoCampionamento = 0;
   
   #ifdef USE_CONTROLS
-  int ultimoPotRaw = 0; 
+  // RIMOSSO: int ultimoPotRaw = 0; <-- Cancellala!
   unsigned long ultimoTempoPressione = 0;
   #endif
 
   for(;;) {
     
     #ifdef USE_CONTROLS
-    // Se i controlli sono attivati, leggiamo il pulsante
     holdAttivo = gestisciPulsanteHold(holdAttivo, ultimoTempoPressione, nuovoFramePronto);
     #endif
 
-    // La logica di pausa funziona indipendentemente da come è stata attivata
     if (holdAttivo) {
       vTaskDelay(50 / portTICK_PERIOD_MS);
       continue; 
     }
 
     #ifdef USE_CONTROLS
-    // Se i controlli sono attivati, leggiamo la manopola, altrimenti resta a 1000us
-    timebaseCondiviso = leggiTimebase(ultimoPotRaw);
+    // MODIFICATO: Niente più parametri da passare
+    timebaseCondiviso = leggiTimebase(); 
     #endif
 
-    // 2. Acquisizione Dati (Sempre attiva, è il cuore dell'oscilloscopio!)
+    // 2. Acquisizione Dati
     if (timebaseCondiviso > 5000) {
       eseguiRollMode(bufferAcquisizione, bufferDisplay, timebaseCondiviso, ultimoCampionamento, nuovoFramePronto);
     } else {
