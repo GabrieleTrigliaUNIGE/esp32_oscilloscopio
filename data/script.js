@@ -79,3 +79,25 @@ function onMessage(event) {
   }
 }
 window.addEventListener('load', initWebSocket);
+
+// --- GESTIONE DEI PULSANTI WEB ---
+function sendCommand(cmd) {
+  // Controlliamo che il WebSocket sia connesso e aperto (readyState === 1)
+  if (websocket && websocket.readyState === 1) {
+    websocket.send(cmd);
+  } else {
+    console.log("WebSocket non connesso. Comando ignorato:", cmd);
+  }
+}
+
+document.getElementById('btnTbUp').addEventListener('click', function() {
+  sendCommand("CMD:TB_UP");
+});
+
+document.getElementById('btnTbDown').addEventListener('click', function() {
+  sendCommand("CMD:TB_DOWN");
+});
+
+document.getElementById('btnHold').addEventListener('click', function() {
+  sendCommand("CMD:HOLD");
+});

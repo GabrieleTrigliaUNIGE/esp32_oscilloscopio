@@ -50,4 +50,10 @@ int SmartEncoder::getValue() {
   return value; 
 }
 
+void SmartEncoder::addValue(int delta) {
+  value += delta;
+  if (value < minVal) value = minVal;
+  if (value > maxVal) value = maxVal;
+}
+
 #endif // USE_ENCODER

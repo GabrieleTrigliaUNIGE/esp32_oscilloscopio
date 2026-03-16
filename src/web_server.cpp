@@ -5,13 +5,40 @@
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
+// Dichiariamo le variabili globali dal main per poterle manipolare
+extern volatile bool holdAttivo;
+extern volatile bool nuovoFramePronto;
+
+// La funzione che ascolta i comandi in arrivo dal Browser
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  if (type == WStype_TEXT) {
+    String msg = String((char*)payload);
+    
+    if (msg == "CMD:TB_UP") {
+      #ifdef USE_ENCODER
+      SmartEncoder::addValue(ENCODER_STEP);
+      nuovoFramePronto = true; // Forza un aggiornamento immediato
+      #endif
+    } 
+    else if (msg == "CMD:TB_DOWN") {
+      #ifdef USE_ENCODER
+      SmartEncoder::addValue(-ENCODER_STEP);
+      nuovoFramePronto = true; // Forza un aggiornamento immediato
+      #endif
+    }
+    else if (msg == "CMD:HOLD") {
+      holdAttivo = !holdAttivo;
+      nuovoFramePronto = true; // Forza il disegno del simbolo di pausa
+    }
+  }
+}
+
 void inizializzaWebServer() {
   if (!LittleFS.begin(true)) { 
     Serial.println("Errore critico: Impossibile montare LittleFS!");
     return;
   }
   
-  // 1. REGOLA ESPLICITA PER LA ROOT (Risolve il "Not found: /")
   server.on("/", HTTP_GET, []() {
     File file = LittleFS.open("/index.html", "r");
     if (!file) {
@@ -22,11 +49,14 @@ void inizializzaWebServer() {
     file.close();
   });
 
-  // 2. REGOLA MAGICA PER TUTTO IL RESTO (style.css, script.js, ecc.)
   server.serveStatic("/", LittleFS, "/");
   
   server.begin();
   webSocket.begin();
+  
+  // Agganciamo la funzione di ascolto al WebSocket!
+  webSocket.onEvent(webSocketEvent); 
+  
   Serial.println("Web Server avviato. Modalità Ibrida attiva.");
 }
 
@@ -50,4 +80,4 @@ void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHo
   }
 }
 
-#endif // USE_WIFI
+#endif // USE_WEB_SERVER

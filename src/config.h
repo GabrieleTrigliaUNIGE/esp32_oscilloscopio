@@ -62,6 +62,7 @@ class SmartEncoder {
   public:
     static void begin(int clk, int dt, int startValue, int stepVal, int minimum, int maximum);
     static int getValue();
+    static void addValue(int delta);
 };
 #endif
 
