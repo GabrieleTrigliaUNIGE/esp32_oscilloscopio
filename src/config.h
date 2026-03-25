@@ -189,4 +189,8 @@ void taskGraficaMenu();
 void taskLogicaOscilloscopio(ButtonEvent eventoTasto, int valoreEncoder, unsigned long &ultimoCampionamento);
 void taskGraficaOscilloscopio();
 
+// App Generatore
+void taskLogicaGeneratore(ButtonEvent eventoTasto, int valoreEncoder);
+void taskGraficaGeneratore();
+
 #endif // CONFIG_H

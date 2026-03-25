@@ -25,14 +25,14 @@ void taskLogicaMenu(ButtonEvent eventoTasto, int valoreEncoder)
   ultimoValoreEncoderMenu = valoreEncoder;
 
   // B. Gestione Click (Entra)
-  if (eventoTasto == BTN_CLICK)
-  {
-    if (voceMenuSelezionata == 0)
-    {
-      statoAttuale = STATE_OSCILLOSCOPE;
-      nuovoFramePronto = true; // Forza il primo disegno
+  if (eventoTasto == BTN_CLICK) {
+    if (voceMenuSelezionata == 0) {
+      statoAttuale = STATE_OSCILLOSCOPE; 
+      nuovoFramePronto = true; 
+    } 
+    else if (voceMenuSelezionata == 1) {
+      statoAttuale = STATE_GENERATOR;
     }
-    // Qui aggiungeremo l'ingresso al generatore in futuro!
   }
 
   vTaskDelay(50 / portTICK_PERIOD_MS);

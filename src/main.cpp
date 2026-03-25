@@ -27,7 +27,7 @@ void TaskCore0_SchermoWeb(void * pvParameters) {
         taskGraficaOscilloscopio();
         break;
       case STATE_GENERATOR:
-        // taskGraficaGeneratore(); (Prossimamente!)
+        taskGraficaGeneratore();
         break;
     }
     
@@ -59,7 +59,7 @@ void TaskCore1_Acquisizione(void * pvParameters) {
         taskLogicaOscilloscopio(eventoTasto, valoreEncoder, ultimoCampionamento);
         break;
       case STATE_GENERATOR:
-        // taskLogicaGeneratore(...); (Prossimamente!)
+        taskLogicaGeneratore(eventoTasto, valoreEncoder);
         break;
     }
   }
