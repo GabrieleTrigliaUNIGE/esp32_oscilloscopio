@@ -2,7 +2,6 @@
 
 #ifdef USE_CONTROLS
 
-// Creiamo l'istanza globale del pulsante (se abilitato)
 #ifdef USE_BUTTON
   SmartButton btnHold;
 #endif
@@ -25,12 +24,19 @@ int leggiTimebase() {
   #endif
 }
 
+ButtonEvent leggiEventoEncoder() {
+  #ifdef USE_ENCODER
+    return SmartEncoder::getButtonEvent();
+  #else
+    return BTN_NONE;
+  #endif
+}
+
 bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto) {
   #ifdef USE_BUTTON
-    // Chiediamo al bottone se è stato cliccato (lui gestisce il suo debounce in privato)
-    if (btnHold.hasBeenClicked()) {
-      statoAttuale = !statoAttuale; // La logica di Hold appartiene all'oscilloscopio
-      nuovoFramePronto = true;      // La logica del display appartiene all'oscilloscopio
+    if (btnHold.hasBeenClicked() == BTN_CLICK) {
+      statoAttuale = !statoAttuale; 
+      nuovoFramePronto = true;      
     }
     return statoAttuale;
   #else

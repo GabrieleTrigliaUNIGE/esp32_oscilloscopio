@@ -147,6 +147,7 @@ class SmartButton {
 #ifdef USE_CONTROLS
   void inizializzaControlli();
   int leggiTimebase();
+  ButtonEvent leggiEventoEncoder();
   bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto);
 #endif
 
@@ -161,6 +162,31 @@ float getVoltage();
 void eseguiRollMode(float* bufferAcq, float* bufferDisp, int tb, unsigned long &ultimoCampionamento, volatile bool &nuovoFramePronto);
 void eseguiSmartTrigger(float* bufferAcq, float* bufferDisp, int tb, volatile bool &nuovoFramePronto);
 
+// ==========================================
+// 🌍 VARIABILI GLOBALI CONDIVISE
+// ==========================================
 extern volatile AppState statoAttuale;
+extern volatile bool nuovoFramePronto;
+extern volatile int timebaseCondiviso;
+extern volatile bool holdAttivo;
+
+extern float bufferAcquisizione[BUFFER_SIZE];
+extern float bufferDisplay[BUFFER_SIZE]; 
+
+// Rendiamo accessibile il display agli altri file (se attivato)
+#ifdef USE_DISPLAY
+  extern Adafruit_SH1106G display; 
+#endif
+
+// ==========================================
+// 📱 APPLICAZIONI (STATI)
+// ==========================================
+// App Menù
+void taskLogicaMenu(ButtonEvent eventoTasto, int valoreEncoder);
+void taskGraficaMenu();
+
+// App Oscilloscopio
+void taskLogicaOscilloscopio(ButtonEvent eventoTasto, int valoreEncoder, unsigned long &ultimoCampionamento);
+void taskGraficaOscilloscopio();
 
 #endif // CONFIG_H
