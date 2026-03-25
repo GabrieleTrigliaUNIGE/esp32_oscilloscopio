@@ -87,22 +87,43 @@ h2 {
   user-select: none;
 }
 
-/* --- NUOVI STILI PER L'OVERLAY --- */
-.canvas-container {
+/* style.css (Aggiunta in fondo per la Patch Modular-Hw) */
+
+/* ==========================================
+   🖼️ GESTIONE GRAFICO E OVERLAY
+   ========================================== */
+
+/* 1. Il Wrapper è la "gabbia". Gestisce lui bordi e ombre! */
+.canvas-wrapper {
   position: relative;
-  display: inline-block;
-  max-width: 95%;
+  width: 95%;
+  max-width: 800px;
+  margin: 0 auto;
+  border: 2px solid #333;
+  box-shadow: 0px 0px 15px #00ff00;
+  border-radius: 5px;
+  background-color: #000;
+  overflow: hidden; /* MAGIA: Taglia via qualsiasi cosa cerchi di sbordare */
 }
 
+/* 2. Il Canvas si limita a riempire la gabbia */
 canvas {
-  display: block; /* Sostituisce il max-width: 95% che era qui prima */
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Bordi e ombre tolti da qui, ora sono sul wrapper */
+  border: none; 
+  box-shadow: none; 
 }
 
+/* 3. L'Overlay riempie esattamente la gabbia */
 .overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85); /* Sfondo nero semi-trasparente */
-  border-radius: 5px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); /* Sfondo scuro semi-trasparente */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -113,8 +134,20 @@ canvas {
 
 .overlay.hidden {
   opacity: 0;
-  pointer-events: none; /* Rende l'overlay "trasparente" ai click quando è nascosto */
+  pointer-events: none; /* Permette i click sul canvas sottostante */
 }
 
-.overlay h2 { color: #fff; font-size: 32px; letter-spacing: 1px; }
-.overlay p { color: #00ff00; font-size: 20px; font-weight: bold; }
+/* Testi dell'Overlay */
+.overlay h2 {
+  color: #fff;
+  font-size: 36px;
+  margin: 0 0 15px 0;
+  text-transform: none; /* Impedisce che diventi tutto maiuscolo come gli altri h2 */
+}
+
+.overlay p {
+  color: #00ff00;
+  font-size: 22px;
+  font-weight: bold;
+  margin: 0;
+}
