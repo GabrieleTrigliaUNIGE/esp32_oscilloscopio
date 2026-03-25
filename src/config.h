@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include <math.h>
 
 // --- MACCHINA A STATI GLOBALE ---
 enum AppState {
@@ -55,6 +56,7 @@ enum ButtonEvent {
     #define ENCODER_PIN_DT  33  // Spostato dal 26
     #define ENCODER_PIN_SW  14
     #define ENCODER_STEP    50  // Quanto varia il timebase a ogni scatto
+    #define ENCODER_LONG_PRESS_MS 400
   #endif
 
   #ifdef USE_BUTTON
@@ -88,7 +90,8 @@ class SmartEncoder {
     static int getValue();
     static void addValue(int delta);
     static void setValue(int val);
-    static ButtonEvent getButtonEvent(); // Cattura Click e Long Press
+    static ButtonEvent getButtonEvent(); 
+    static int getLongPressProgress();
 };
 #endif
 
@@ -117,7 +120,8 @@ class SmartButton {
   #define OLED_RESET -1
   
   void inizializzaDisplay();
-  void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float freq); 
+  void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float freq);
+  void disegnaBarraPressione(int progresso);
   void mostraInfoBoot(String versione, String rete, String ip);
 #endif
 
@@ -138,6 +142,8 @@ class SmartButton {
     void inizializzaWebServer();
     void gestisciWeb();
     void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHold);
+    void inviaDatiMenuWeb(int voceSelezionata);
+    void inviaDatiGeneratoreWeb(int freq, int tipo);
   #endif
 #endif
 
@@ -149,6 +155,7 @@ class SmartButton {
   int leggiTimebase();
   ButtonEvent leggiEventoEncoder();
   bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto);
+  int getProgressoPressione();
 #endif
 
 // ==========================================
@@ -169,6 +176,8 @@ extern volatile AppState statoAttuale;
 extern volatile bool nuovoFramePronto;
 extern volatile int timebaseCondiviso;
 extern volatile bool holdAttivo;
+extern volatile bool aggiornaSchermoMenu;
+extern volatile bool aggiornaSchermoGen;
 
 extern float bufferAcquisizione[BUFFER_SIZE];
 extern float bufferDisplay[BUFFER_SIZE]; 

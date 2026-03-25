@@ -81,7 +81,7 @@ ButtonEvent SmartEncoder::getButtonEvent() {
 
   // 2. Tasto tenuto premuto (Long Press)
   if (statoAttuale == LOW && inPressione) {
-    if (!lungaPressioneSegnalata && (tempoAttuale - tempoInizioPressione > 800)) {
+    if (!lungaPressioneSegnalata && (tempoAttuale - tempoInizioPressione > ENCODER_LONG_PRESS_MS)) {
       evento = BTN_LONG_PRESS;
       lungaPressioneSegnalata = true;
     }
@@ -99,6 +99,18 @@ ButtonEvent SmartEncoder::getButtonEvent() {
 
   statoPrecedenteSW = statoAttuale;
   return evento;
+}
+
+// Calcola la percentuale di completamento del Long Press (0-100)
+int SmartEncoder::getLongPressProgress() {
+  if (!inPressione || lungaPressioneSegnalata) return 0;
+  
+  unsigned long tempoAttuale = millis();
+  if (tempoAttuale - tempoInizioPressione < 50) return 0; // Debounce iniziale
+  
+  // Mappiamo il tempo trascorso in percentuale
+  int progresso = map(tempoAttuale - tempoInizioPressione, 50, ENCODER_LONG_PRESS_MS, 0, 100);
+  return constrain(progresso, 0, 100); // Assicuriamoci che non superi il 100%
 }
 
 #endif // USE_ENCODER

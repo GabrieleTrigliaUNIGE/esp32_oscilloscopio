@@ -1,5 +1,4 @@
 #include "config.h"
-#include <math.h>
 
 extern volatile bool aggiornaSchermoMenu;
 

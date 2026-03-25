@@ -44,4 +44,12 @@ bool gestisciPulsanteHold(bool statoAttuale, volatile bool &nuovoFramePronto) {
   #endif
 }
 
+int getProgressoPressione() {
+  #ifdef USE_ENCODER
+    return SmartEncoder::getLongPressProgress();
+  #else
+    return 0;
+  #endif
+}
+
 #endif // USE_CONTROLS

@@ -86,3 +86,35 @@ h2 {
   touch-action: none; 
   user-select: none;
 }
+
+/* --- NUOVI STILI PER L'OVERLAY --- */
+.canvas-container {
+  position: relative;
+  display: inline-block;
+  max-width: 95%;
+}
+
+canvas {
+  display: block; /* Sostituisce il max-width: 95% che era qui prima */
+}
+
+.overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85); /* Sfondo nero semi-trasparente */
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none; /* Rende l'overlay "trasparente" ai click quando è nascosto */
+}
+
+.overlay h2 { color: #fff; font-size: 32px; letter-spacing: 1px; }
+.overlay p { color: #00ff00; font-size: 20px; font-weight: bold; }

@@ -16,8 +16,43 @@ function initWebSocket() {
 
 function onMessage(event) {
   var data = event.data.split(';');
+  var type = data[0]; // Leggiamo la nuova etichetta (OSC, MENU o GEN)
+
+  var overlay = document.getElementById('status-overlay');
+  var overlayTitle = document.getElementById('overlay-title');
+  var overlayDesc = document.getElementById('overlay-desc');
+
+  // --- GESTIONE STATI ---
+  if (type === "MENU") {
+    overlay.classList.remove('hidden');
+    overlayTitle.innerText = "Menù Principale";
+    var voce = data[1] === "0" ? "1. Oscilloscopio" : "2. Gen. d'Onda";
+    overlayDesc.innerText = "Selezione attuale: " + voce;
+    return; // Ci fermiamo qui, non disegniamo il grafico
+  } 
+  else if (type === "GEN") {
+    overlay.classList.remove('hidden');
+    overlayTitle.innerText = "Generatore d'Onda Attivo";
+    var onde = ["Sinusoide", "Quadra", "Triangolare"];
+    var tipoStr = onde[parseInt(data[2])];
+    overlayDesc.innerText = "Forma: " + tipoStr + " | Freq: " + data[1] + " Hz";
+    return; // Ci fermiamo qui
+  } 
+  else if (type === "OSC") {
+    // Siamo nell'oscilloscopio: nascondiamo l'overlay e togliamo l'etichetta "OSC" dall'array
+    overlay.classList.add('hidden');
+    data.shift(); // Elimina il primo elemento ("OSC"), così data[0] torna a essere il Timebase!
+  } 
+  else {
+    // Fallback: se arriva un pacchetto senza etichetta (vecchio firmware), lo disegniamo comunque
+    overlay.classList.add('hidden');
+  }
+
+  // ==========================================
+  // DA QUI IN POI IL TUO CODICE ORIGINALE RIMANE IDENTICO!
+  // ==========================================
   
-  // 1. Aggiorniamo il Timebase SOLO se l'utente non sta scrivendo nella casella
+  // 1. Aggiorniamo il Timebase...
   var tbInput = document.getElementById('tb');
   if (document.activeElement !== tbInput) {
     tbInput.value = data[0];
@@ -25,7 +60,6 @@ function onMessage(event) {
   
   // 2. Aggiorniamo VMax e Frequenza
   document.getElementById('vmax').innerHTML = parseFloat(data[1]).toFixed(1);
-  
   var freqValue = parseInt(data[2]);
   document.getElementById('freq').innerHTML = (freqValue > 0) ? freqValue : "--";
 
@@ -146,3 +180,4 @@ btnDown.addEventListener('pointercancel', stopPress);
 document.getElementById('btnHold').addEventListener('click', function() {
   sendCommand("CMD:HOLD");
 });
+

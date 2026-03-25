@@ -121,4 +121,46 @@ void disegnaOnda(float* buffer, int timebase, bool inHold, float vMax, float fre
   display.display(); 
 }
 
+// Disegna un piccolo arco di cerchio per completare l'animazione
+// start e end sono angoli in radianti.
+void disegnaSegmentoArco(int x, int y, int r, float start, float end, int color) {
+  // Passaggio di 0.05 radianti (circa 3 gradi) per avere una linea fluida
+  for (float i = start; i < end; i += 0.05) {
+    int px1 = x + r * cos(i);
+    int py1 = y + r * sin(i);
+    int px2 = x + r * cos(i + 0.05);
+    int py2 = y + r * sin(i + 0.05);
+    display.drawLine(px1, py1, px2, py2, color);
+  }
+}
+
+// --- 📱 LA TUA NUOVA FUNZIONE ---
+// Sostituisce la barra lineare con un cerchio progressivo
+void disegnaBarraPressione(int progresso) {
+  if (progresso <= 0) return;
+
+  // Parametri del cerchio (Top Right)
+  int centerX = 120; 
+  int centerY = 8;  
+  int radius = 5;   
+
+  // 1. Pulizia dell'area (un rettangolo che contiene il cerchio)
+  // Questo serve a non flickerare o coprire il titolo
+  display.fillRect(centerX - radius - 1, centerY - radius - 1, (radius + 1) * 2, (radius + 1) * 2, SH110X_BLACK);
+
+  // 2. Disegniamo lo "tracciato" (un cerchio vuoto bianco in background)
+  display.drawCircle(centerX, centerY, radius, SH110X_WHITE);
+
+  // 3. Disegniamo l'arco che si completa in base al progresso
+  // In C++ gli angoli partono da "Est" (0). Noi vogliamo partire da "Nord" (-PI/2).
+  // Un cerchio completo è 2*PI radianti.
+  float startAngle = -PI / 2.0; 
+  float currentAngle = startAngle + (progresso * (2.0 * PI / 100.0));
+
+  // Disegniamo l'arco del progresso sul bordo esterno
+  disegnaSegmentoArco(centerX, centerY, radius, startAngle, currentAngle, SH110X_WHITE);
+  // Un altro arco più piccolo internamente per renderlo più "spesso" visivamente
+  disegnaSegmentoArco(centerX, centerY, radius - 1, startAngle, currentAngle, SH110X_WHITE);
+}
+
 #endif // USE_DISPLAY

@@ -79,13 +79,31 @@ void inviaDatiWeb(float* buffer, int timebase, float vMax, float freq, bool inHo
   if (millis() - ultimoInvio > 50) { 
     ultimoInvio = millis();
     
-    String payload = String(timebase) + ";" + String(vMax, 2) + ";" + String(freq, 0) + ";" + String(inHold ? "1" : "0") + ";";
+    // NOTA: Abbiamo aggiunto "OSC;" all'inizio della stringa!
+    String payload = "OSC;" + String(timebase) + ";" + String(vMax, 2) + ";" + String(freq, 0) + ";" + String(inHold ? "1" : "0") + ";";
     
     for (int i = 0; i < BUFFER_SIZE; i++) {
       payload += String(buffer[i], 2); 
       if (i < BUFFER_SIZE - 1) payload += ",";
     }
     webSocket.broadcastTXT(payload); 
+  }
+}
+
+// NUOVE FUNZIONI PER INVIARE GLI STATI "FERMI"
+void inviaDatiMenuWeb(int voceSelezionata) {
+  static unsigned long ultimoInvio = 0;
+  if (millis() - ultimoInvio > 250) { // Aggiornamento più rilassato (4 volte al sec)
+    ultimoInvio = millis();
+    webSocket.broadcastTXT("MENU;" + String(voceSelezionata));
+  }
+}
+
+void inviaDatiGeneratoreWeb(int freq, int tipoOnda) {
+  static unsigned long ultimoInvio = 0;
+  if (millis() - ultimoInvio > 250) {
+    ultimoInvio = millis();
+    webSocket.broadcastTXT("GEN;" + String(freq) + ";" + String(tipoOnda));
   }
 }
 
