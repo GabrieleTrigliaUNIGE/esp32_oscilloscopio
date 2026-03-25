@@ -1,5 +1,5 @@
 #include "config.h"
-#include <math.h> // Ci serve per la funzione sin()
+#include <math.h>
 
 // =========================================================
 // 🎯 MOTORE 1: SIMULATORE (Senza Hardware)

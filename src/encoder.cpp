@@ -11,6 +11,13 @@ int SmartEncoder::minVal = MIN_TIMEBASE;
 int SmartEncoder::maxVal = MAX_TIMEBASE;
 int SmartEncoder::pinCLK = -1;
 int SmartEncoder::pinDT = -1;
+int SmartEncoder::pinSW = -1;
+
+// Inizializzazione variabili per il tasto
+unsigned long SmartEncoder::tempoInizioPressione = 0;
+bool SmartEncoder::statoPrecedenteSW = HIGH;
+bool SmartEncoder::inPressione = false;
+bool SmartEncoder::lungaPressioneSegnalata = false;
 
 void IRAM_ATTR SmartEncoder::isr() {
   uint8_t CLK_stato = digitalRead(pinCLK);
@@ -38,29 +45,60 @@ void IRAM_ATTR SmartEncoder::isr() {
   if (value > maxVal) value = maxVal;
 }
 
-void SmartEncoder::begin(int clk, int dt, int startValue, int stepVal, int minimum, int maximum) {
-  pinCLK = clk; pinDT = dt; value = startValue; step = stepVal; minVal = minimum; maxVal = maximum;
+void SmartEncoder::begin(int clk, int dt, int sw, int startValue, int stepVal, int minimum, int maximum) {
+  pinCLK = clk; pinDT = dt; pinSW = sw; 
+  value = startValue; step = stepVal; minVal = minimum; maxVal = maximum;
+  
   pinMode(pinCLK, INPUT_PULLUP);
   pinMode(pinDT, INPUT_PULLUP);
+  pinMode(pinSW, INPUT_PULLUP); // Setup del pin del tasto
+  
   attachInterrupt(digitalPinToInterrupt(pinCLK), isr, CHANGE);
   attachInterrupt(digitalPinToInterrupt(pinDT), isr, CHANGE);
 }
 
-int SmartEncoder::getValue() { 
-  return value; 
-}
-
-void SmartEncoder::addValue(int delta) {
-  value += delta;
-  if (value < minVal) value = minVal;
-  if (value > maxVal) value = maxVal;
-}
+int SmartEncoder::getValue() { return value; }
+void SmartEncoder::addValue(int delta) { setValue(value + delta); }
 
 void SmartEncoder::setValue(int val) {
   value = val;
-  
   if (value < minVal) value = minVal;
   if (value > maxVal) value = maxVal;
+}
+
+// Nuova logica Non-Bloccante per il Tasto dell'Encoder
+ButtonEvent SmartEncoder::getButtonEvent() {
+  bool statoAttuale = digitalRead(pinSW);
+  unsigned long tempoAttuale = millis();
+  ButtonEvent evento = BTN_NONE;
+
+  // 1. Pressione del tasto (con anti-rimbalzo di 50ms)
+  if (statoAttuale == LOW && statoPrecedenteSW == HIGH && (tempoAttuale - tempoInizioPressione > 50)) {
+    tempoInizioPressione = tempoAttuale;
+    inPressione = true;
+    lungaPressioneSegnalata = false;
+  }
+
+  // 2. Tasto tenuto premuto (Long Press)
+  if (statoAttuale == LOW && inPressione) {
+    if (!lungaPressioneSegnalata && (tempoAttuale - tempoInizioPressione > 800)) {
+      evento = BTN_LONG_PRESS;
+      lungaPressioneSegnalata = true;
+    }
+  }
+
+  // 3. Rilascio del tasto (Click)
+  if (statoAttuale == HIGH && statoPrecedenteSW == LOW) {
+    if (inPressione && !lungaPressioneSegnalata) {
+      if (tempoAttuale - tempoInizioPressione > 50) { // Anti-rimbalzo al rilascio
+        evento = BTN_CLICK;
+      }
+    }
+    inPressione = false;
+  }
+
+  statoPrecedenteSW = statoAttuale;
+  return evento;
 }
 
 #endif // USE_ENCODER

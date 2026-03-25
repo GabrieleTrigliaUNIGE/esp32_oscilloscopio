@@ -3,6 +3,19 @@
 
 #include <Arduino.h>
 
+// --- MACCHINA A STATI GLOBALE ---
+enum AppState {
+  STATE_MENU,           // 0: Siamo nel menù principale
+  STATE_OSCILLOSCOPE,   // 1: Siamo nell'oscilloscopio
+  STATE_GENERATOR       // 2: Siamo nel generatore d'onda
+};
+
+enum ButtonEvent {
+  BTN_NONE,       // Nessuna azione
+  BTN_CLICK,      // Click veloce (Invio)
+  BTN_LONG_PRESS  // Pressione prolungata (Indietro)
+};
+
 // ==========================================
 // 🎚️ INTERRUTTORI DI COMPILAZIONE (FEATURES)
 // ==========================================
@@ -20,8 +33,8 @@
 // ==========================================
 // 🧲 MOTORE DI ACQUISIZIONE (Scegline UNO SOLO)
 // ==========================================
-#define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
-// #define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
+// #define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
+#define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
 
 // ==========================================
 // 📌 PIN E IMPOSTAZIONI GLOBALI
@@ -38,15 +51,19 @@
 
 #ifdef USE_CONTROLS
   #ifdef USE_ENCODER
-    #define ENCODER_PIN_CLK 25
-    #define ENCODER_PIN_DT  26
+    #define ENCODER_PIN_CLK 27  // Spostato dal 25 per liberare il DAC
+    #define ENCODER_PIN_DT  33  // Spostato dal 26
+    #define ENCODER_PIN_SW  14
     #define ENCODER_STEP    50  // Quanto varia il timebase a ogni scatto
   #endif
 
   #ifdef USE_BUTTON
-    #define PIN_PULSANTE 32     // Pin del pulsante fisico per la pausa
+    #define PIN_PULSANTE 32     // Pin del pulsante fisico per la pausa/selezione
   #endif
 #endif
+
+// Pin del DAC per il Generatore di Funzioni
+#define PIN_GENERATORE 25
 
 // ==========================================
 // 🧩 CLASSI DEI DISPOSITIVI (HARDWARE ABSTRACTION)
@@ -57,13 +74,21 @@ class SmartEncoder {
     static volatile int value;
     static volatile uint8_t statoPrecedente;
     static volatile int contatoreInterno;
-    static int step, minVal, maxVal, pinCLK, pinDT;
+    static int step, minVal, maxVal, pinCLK, pinDT, pinSW;
+    
+    // Variabili per la gestione del tasto integrato
+    static unsigned long tempoInizioPressione;
+    static bool statoPrecedenteSW;
+    static bool inPressione;
+    static bool lungaPressioneSegnalata;
+
     static void IRAM_ATTR isr();
   public:
-    static void begin(int clk, int dt, int startValue, int stepVal, int minimum, int maximum);
+    static void begin(int clk, int dt, int sw, int startValue, int stepVal, int minimum, int maximum);
     static int getValue();
     static void addValue(int delta);
     static void setValue(int val);
+    static ButtonEvent getButtonEvent(); // Cattura Click e Long Press
 };
 #endif
 
@@ -135,5 +160,7 @@ class SmartButton {
 float getVoltage();
 void eseguiRollMode(float* bufferAcq, float* bufferDisp, int tb, unsigned long &ultimoCampionamento, volatile bool &nuovoFramePronto);
 void eseguiSmartTrigger(float* bufferAcq, float* bufferDisp, int tb, volatile bool &nuovoFramePronto);
+
+extern volatile AppState statoAttuale;
 
 #endif // CONFIG_H
