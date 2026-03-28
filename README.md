@@ -1,16 +1,17 @@
-# ⚡ ESP32 Smart Oscilloscope (Dual-Core & Wi-Fi)
+# ⚡ ESP32 Smart Oscilloscope & Function Generator (Dual-Core & Wi-Fi)
 
-Un oscilloscopio digitale fai-da-te ad alte prestazioni basato su ESP32. Sfrutta il sistema operativo in tempo reale (FreeRTOS) per gestire l'acquisizione dei dati su un core dedicato, garantendo un'interfaccia fluida sia sul display OLED locale sia sul browser web tramite WebSockets.
+Un potente strumento di misura IoT e multifunzione basato su ESP32. Sfrutta il sistema operativo in tempo reale (FreeRTOS) per gestire l'acquisizione dei dati o la generazione di forme d'onda su un core dedicato, garantendo un'interfaccia fluida sia sul display OLED locale sia sul browser web tramite WebSockets.
 
 ## ✨ Caratteristiche Principali
 
-* **Architettura Multi-Core (FreeRTOS):** Acquisizione del segnale sul Core 1 (nessun lag) e gestione interfaccia/Wi-Fi sul Core 0.
-* **Interfaccia Web Bidirezionale:** Visualizza l'onda in tempo reale e controlla lo strumento (Pausa, regolazione Timebase tramite bottoni hold-to-repeat o inserimento manuale) direttamente dal browser del tuo smartphone o PC.
-* **Controllo Hardware di Precisione:** Regola lo zoom temporale (da 20 µs a 100.000 µs) tramite un **Encoder Rotativo Digitale (KY-040)** gestito da una Macchina a Stati (State Machine) per un antirimbalzo perfetto e zero lag.
-* **Display OLED Locale:** Supporto integrato per display I2C da 1.3" (Chip SH110X) con I2C overcloccato a 400kHz.
+* **Strumento 2-in-1:** Oscilloscopio digitale ad alte prestazioni e Generatore di Funzioni integrato (Onde Sinusoidali, Quadre e Triangolari via DAC).
+* **Architettura Multi-Core (FreeRTOS):** Elaborazione hardware sul Core 1 (nessun lag) e gestione interfaccia/Wi-Fi sul Core 0.
+* **Interfaccia Web Bidirezionale & "State-Aware":** Visualizza l'onda in tempo reale, controlla lo strumento dal browser e ricevi feedback visivi (overlay) se il dispositivo è in modalità Menù o Generatore.
+* **Controllo Hardware Smart:** Interfaccia utente a stati multipli navigabile tramite un **Encoder Rotativo Digitale (KY-040)** gestito a interrupt, con riconoscimento intelligente di Click Rapidi e Pressioni Lunghe (Long Press) per tornare al menù principale.
+* **Display OLED Locale:** Supporto integrato per display I2C da 1.3" (Chip SH110X) con animazioni avanzate (Circular Progress Bar).
 * **Digital Signal Processing (DSP):** Motore matematico avanzato con **Schmitt Trigger software** e isteresi (10%) per un calcolo solido della frequenza e della VMax.
 * **Smart Trigger & Roll Mode:** Transizione automatica tra un'onda "congelata" (per segnali veloci) e uno scorrimento continuo (per segnali lenti).
-* **Architettura OOP Modulare:** Driver hardware astratti (`SmartEncoder`, `SmartButton`) e file di configurazione centralizzato.
+* **Architettura OOP Modulare:** Driver hardware astratti e Macchina a Stati globale facilmente espandibile.
 
 ---
 
@@ -29,8 +30,8 @@ Il firmware è altamente personalizzabile. Puoi accendere o spegnere interi bloc
 * 1x Scheda di sviluppo **ESP32** (es. DevKit V1)
 * 1x Display **OLED I2C 1.3"** (Chip SH1106, indirizzo `0x3C`)
 * 1x **Encoder Rotativo** (Modulo breakout tipo AZ-Delivery KY-040 con resistenze di pull-up integrate)
-* 1x Pulsante fisico (Push-button)
-* 2x Resistenze dello stesso valore (es. 10kΩ) per il partitore di tensione
+* 1x Pulsante fisico (Push-button) per la pausa
+* 2x Resistenze dello stesso valore (es. 10kΩ) per il partitore di tensione in ingresso
 * Breadboard e cavi jumper
 
 ---
@@ -43,13 +44,15 @@ Ecco lo schema dei collegamenti da realizzare. Per maggiori dettagli, puoi scari
 
 ---
 
-## 🔌 Schema dei Collegamenti
+## 🔌 Schema dei Collegamenti (Aggiornato v1.2.0)
 
 | Componente | Pin ESP32 | Note Importanti |
 | :--- | :--- | :--- |
-| **Segnale In** | `GPIO 34` | **MAX 3.3V!** Il partitore dimezza il segnale d'ingresso. |
-| **Encoder CLK** | `GPIO 25` | Genera gli impulsi di rotazione. |
-| **Encoder DT** | `GPIO 26` | Determina la direzione della rotazione. |
+| **Segnale In (ADC)** | `GPIO 34` | **MAX 3.3V!** Il partitore dimezza il segnale d'ingresso. |
+| **Generatore Out (DAC)**| `GPIO 25` | Uscita analogica reale per la generazione delle onde. |
+| **Encoder CLK** | `GPIO 27` | Genera gli impulsi di rotazione. |
+| **Encoder DT** | `GPIO 33` | Determina la direzione della rotazione. |
+| **Encoder SW** | `GPIO 14` | Pulsante integrato (Click per selezione, Long Press per Indietro). |
 | **Encoder + (VCC)**| `3.3V` | **Non alimentare a 5V**, altrimenti brucerai i pin dell'ESP32! |
 | **Pulsante HOLD**| `GPIO 32` | Collegare l'altro piedino al `GND` (Pull-Up interno usato). |
 | **OLED SDA** | `GPIO 21` | Linea dati I2C. |

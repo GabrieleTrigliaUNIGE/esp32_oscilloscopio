@@ -43,7 +43,7 @@ void taskGraficaOscilloscopio() {
     float vMaxCorrente = 0.0; float freqCorrente = 0.0;
     
     #ifdef USE_PROCESSING
-        calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
+      calcolaStatistiche(bufferDisplay, timebaseCondiviso, vMaxCorrente, freqCorrente);
     #endif
 
     #ifdef USE_DISPLAY

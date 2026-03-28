@@ -34,8 +34,8 @@ enum ButtonEvent {
 // ==========================================
 // 🧲 MOTORE DI ACQUISIZIONE (Scegline UNO SOLO)
 // ==========================================
-// #define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
-#define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
+#define USE_REAL_ADC       // Legge il segnale vero dal Pin 34
+// #define USE_SIMULATOR      // Genera una finta onda sinusoidale per i test software
 
 // ==========================================
 // 📌 PIN E IMPOSTAZIONI GLOBALI
@@ -64,7 +64,7 @@ enum ButtonEvent {
   #endif
 #endif
 
-// Pin del DAC per il Generatore di Funzioni
+// Pin del DAC per il GdF
 #define PIN_GENERATORE 25
 
 // ==========================================
