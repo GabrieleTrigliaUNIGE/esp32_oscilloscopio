@@ -110,7 +110,7 @@ void TaskCore1_Acquisizione(void * pvParameters) {
 }
 
 // =========================================================
-// 🚀 SETUP (Invariato)
+// 🚀 SETUP
 // =========================================================
 void setup() {
   Serial.begin(115200);
@@ -119,6 +119,8 @@ void setup() {
   #ifdef USE_CONTROLS
   inizializzaControlli();
   #endif
+
+  setupGeneratoreTimer();
 
   #ifdef USE_DISPLAY
   inizializzaDisplay(); 

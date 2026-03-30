@@ -199,6 +199,7 @@ void taskLogicaOscilloscopio(ButtonEvent eventoTasto, int valoreEncoder, unsigne
 void taskGraficaOscilloscopio();
 
 // App Generatore
+void setupGeneratoreTimer();
 void taskLogicaGeneratore(ButtonEvent eventoTasto, int valoreEncoder);
 void taskGraficaGeneratore();
 
